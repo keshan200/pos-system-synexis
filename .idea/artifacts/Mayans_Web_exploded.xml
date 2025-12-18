@@ -1,0 +1,25 @@
+<component name="ArtifactManager">
+  <artifact type="exploded-war" name="Mayans:Web exploded">
+    <output-path>$PROJECT_DIR$/out/artifacts/Mayans_Web_exploded</output-path>
+    <root id="root">
+      <element id="javaee-facet-resources" facet="Mayans/web/Web" />
+      <element id="directory" name="WEB-INF">
+        <element id="directory" name="classes">
+          <element id="module-output" name="Mayans" />
+        </element>
+        <element id="directory" name="lib">
+          <element id="library" level="project" name="activation-1.1.1" />
+          <element id="library" level="project" name="byte-buddy-1.12.18" />
+          <element id="library" level="project" name="classmate-1.5.1" />
+          <element id="library" level="project" name="hibernate-core-5.6.15.Final" />
+          <element id="library" level="project" name="javaee-endorsed-api-7.0" />
+          <element id="library" level="project" name="javax.mail-1.6.2" />
+          <element id="library" level="project" name="javax.persistence-api-2.2" />
+          <element id="library" level="project" name="javax.servlet-api-4.0.1" />
+          <element id="library" level="project" name="lib" />
+          <element id="library" level="project" name="lib2" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>
