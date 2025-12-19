@@ -384,64 +384,125 @@
         <p class="copyright">&copy; 2018 Freshcery | Groceries Organic Store. All rights reserved.</p>
     </footer>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
     <script>
+        // Load categories function
+        function loadCategories() {
+            console.log("Loading categories...");
+            var contextPath = ''; // Adjust if needed: '/Mayans_Web_exploded'
+
+            $.ajax({
+                url: contextPath + '/LoadCategoriesData', // Adjust endpoint as needed
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    var menu = $('#categoriesDropdownMenu');
+                    menu.empty();
+
+                    if (data.status && data.categories) {
+                        data.categories.forEach(function(cat) {
+                            menu.append(`<a class="dropdown-item" href="shop.html?category=${cat.id}">${cat.name}</a>`);
+                        });
+                    } else {
+                        menu.append('<span class="dropdown-item text-muted">No categories found</span>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Categories load error:", error);
+                    $('#categoriesDropdownMenu').html('<span class="dropdown-item text-danger">Failed to load</span>');
+                }
+            });
+        }
+
+        // Load products function
         function loadProducts() {
-            fetch("LoadProductData")
-                .then(res => res.json())
-                .then(data => {
+            console.log("Loading products...");
+            var contextPath = '/Mayans_Web_exploded';
+
+            $.ajax({
+                url: contextPath + '/LoadProductData',
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    console.log("Products received:", data);
+
                     if (!data.status) {
-                        console.error("Failed to load products");
+                        console.error("Failed to load products:", data.error);
+                        $('#productContainer').html('<div class="alert alert-danger">Failed to load products</div>');
                         return;
                     }
 
-                    let container = document.getElementById("productContainer");
+                    var container = $('#productContainer');
+                    container.empty();
 
-                    // Destroy existing carousel before adding new items
-                    if ($(container).hasClass('owl-loaded')) {
-                        $(container).trigger('destroy.owl.carousel');
-                        $(container).html(''); // Clear old items
-                    } else {
-                        container.innerHTML = "";
+                    if (!data.productList || data.productList.length === 0) {
+                        container.html('<div class="alert alert-info">No products available</div>');
+                        return;
                     }
 
-                    data.productList.forEach(p => {
-                        let discountHtml = "";
-                        let priceHtml = `<span class="reguler">Rs. ${p.price.toFixed(2)}</span>`;
+                    data.productList.forEach(function(p) {
+                        var discountHtml = "";
+                        var priceHtml = `<span class="reguler">Rs. ${parseFloat(p.price).toFixed(2)}</span>`;
+                        var ribbonHtml = "";
 
-                        if (p.discount > 0) {
+                        if (p.discount && p.discount > 0) {
                             let discounted = p.price - (p.price * p.discount / 100);
-                            discountHtml = `<span class="discount">Rs. ${p.price.toFixed(2)}</span>`;
-                            priceHtml = `<span class="reguler">Rs. ${discounted.toFixed(2)}</span>`;
+                            discountHtml = `<span class="discount">Rs. ${parseFloat(p.price).toFixed(2)}</span>`;
+                            priceHtml = `<span class="reguler">Rs. ${parseFloat(discounted).toFixed(2)}</span>`;
+                            ribbonHtml = `
+                                <div class="card-ribbon">
+                                    <div class="card-ribbon-container right">
+                                        <span class="ribbon ribbon-primary">${p.discount}% OFF</span>
+                                    </div>
+                                </div>
+                            `;
                         }
 
-                        let html = `
-                    <div class="item">
-                        <div class="card card-product">
-                            ${p.discount > 0 ? `<div class="ribbon"><span>${p.discount}% OFF</span></div>` : ''}
-                            <div class="card-image">
-                                <img src="assets/img/vegetables.jpg" alt="${p.title}" class="card-img-top">
-                            </div>
-                            <div class="card-body">
-                                <h5 class="card-title">${p.title}</h5>
-                                <div class="card-price">
-                                    ${discountHtml}
-                                    ${priceHtml}
+                        // Use product image if available, otherwise default
+                        var imgSrc = p.image || 'assets/img/vegetables.jpg';
+
+                        var html = `
+                            <div class="item">
+                                <div class="card card-product">
+                                    ${ribbonHtml}
+                                    <div class="card-badge">
+                                        <img src="${imgSrc}" alt="${p.title}" class="card-img-top">
+                                    </div>
+                                    <div class="card-body">
+                                        <h4 class="card-title">
+                                            <a href="single-product.html?id=${p.id || ''}">${p.title}</a>
+                                        </h4>
+                                        <div class="card-price">
+                                            ${discountHtml}
+                                            ${priceHtml}
+                                        </div>
+                                        <a href="single-product.html?id=${p.id || ''}" class="btn btn-block btn-primary">
+                                            Add to Cart
+                                        </a>
+                                    </div>
                                 </div>
-                                <a  href="single-product.html" class="btn btn-primary btn-block mt-2">Add to Cart</a>
                             </div>
-                        </div>
-                    </div>
-                `;
-                        container.insertAdjacentHTML("beforeend", html);
+                        `;
+                        container.append(html);
                     });
 
-                    // Initialize carousel
-                    $(container).owlCarousel({
+                    // Initialize Owl Carousel after adding items
+                    if (container.hasClass('owl-loaded')) {
+                        container.trigger('destroy.owl.carousel');
+                        container.removeClass('owl-carousel owl-loaded');
+                        container.find('.owl-stage-outer').children().unwrap();
+                    }
+
+                    container.addClass('owl-carousel');
+                    container.owlCarousel({
                         items: 4,
                         margin: 20,
                         loop: true,
                         nav: true,
                         dots: false,
+                        navText: ["<i class='fa fa-chevron-left'></i>", "<i class='fa fa-chevron-right'></i>"],
                         responsive: {
                             0: { items: 1 },
                             576: { items: 2 },
@@ -449,13 +510,46 @@
                             1200: { items: 4 }
                         }
                     });
-                });
+                },
+                error: function(xhr, status, error) {
+                    console.error("AJAX error:", status, error);
+                    console.error("Response Text:", xhr.responseText);
+                    console.error("Status Code:", xhr.status);
+                    $('#productContainer').html(`
+                        <div class="alert alert-danger">
+                            <strong>Error loading products:</strong> ${error}<br>
+                            <small>Check console for details</small>
+                        </div>
+                    `);
+                }
+            });
         }
 
+        // Initialize everything when document is ready
+        $(document).ready(function() {
+            console.log("Document ready - initializing...");
 
+            // Load categories and products
+            loadCategories();
+            loadProducts();
 
-
+            // Initialize other carousels
+            $('.shop-categories.owl-carousel').owlCarousel({
+                items: 4,
+                margin: 20,
+                loop: true,
+                nav: false,
+                dots: true,
+                responsive: {
+                    0: { items: 1 },
+                    576: { items: 2 },
+                    768: { items: 3 },
+                    1200: { items: 4 }
+                }
+            });
+        });
     </script>
+
 
 
     <script type="text/javascript" src="assets/js/vendor/jquery.js"></script>
@@ -469,6 +563,7 @@
     <script type="text/javascript" src="assets/packages/thumbelina/thumbelina.js"></script>
     <script type="text/javascript" src="assets/packages/bootstrap-touchspin/bootstrap-touchspin.js"></script>
     <script type="text/javascript" src="assets/js/vendor/theme.js"></script>
+
 </body>
 
 </html>
