@@ -5,9 +5,9 @@ import com.google.gson.JsonObject;
 import hibernate.HibernateUtil;
 import hibernate.User;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Date;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -21,85 +21,87 @@ import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Restrictions;
 
 @WebServlet(name = "SignUp", urlPatterns = {"/SignUp"})
+
+
 public class SignUp extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
         Gson gson = new Gson();
-        JsonObject user = gson.fromJson(request.getReader(), JsonObject.class);
-
-        String firstName = user.get("firstName").getAsString();
-        String lastName = user.get("lastName").getAsString();
-        final String email = user.get("email").getAsString();
-        String password = user.get("password").getAsString();
-
         JsonObject resJsonObject = new JsonObject();
         resJsonObject.addProperty("status", false);
-        if (firstName.isEmpty()) {
-            resJsonObject.addProperty("message", "First Name can not be empty");
-        } else if (lastName.isEmpty()) {
-            resJsonObject.addProperty("message", "Last Name can not be empty");
-        } else if (email.isEmpty()) {
-            resJsonObject.addProperty("message", "Email can not be empty");
-        } else if (!Util.isEmailValid(email)) {
-            resJsonObject.addProperty("message", "Please enter a valid email!");
-        } else if (password.isEmpty()) {
-            resJsonObject.addProperty("message", "Password can not be empty");
-        } else if (!Util.isPasswordValid(password)) {
-            resJsonObject.addProperty("message", "The password must constaint at least uppercase, lowercase,"
-                    + "number,special characters and to be minimum eight charaters long!");
-        } else {
 
-            //hibernate save
-            SessionFactory sf = HibernateUtil.getSessionFactory();
-            Session session = sf.openSession();
+        try {
+            JsonObject userJson = gson.fromJson(request.getReader(), JsonObject.class);
 
-            Criteria criteria = session.createCriteria(User.class);
-            criteria.add(Restrictions.eq("email", email));
+            String firstName = userJson.get("firstName").getAsString().trim();
+            String lastName = userJson.get("lastName").getAsString().trim();
+            final String email = userJson.get("email").getAsString().trim();
+            String password = userJson.get("password").getAsString().trim();
 
-            if (!criteria.list().isEmpty()) {
-                resJsonObject.addProperty("message", "User with this Email already exists");
+            // ✅ Input validations
+            if (firstName.isEmpty()) {
+                resJsonObject.addProperty("message", "First Name cannot be empty");
+            } else if (lastName.isEmpty()) {
+                resJsonObject.addProperty("message", "Last Name cannot be empty");
+            } else if (email.isEmpty()) {
+                resJsonObject.addProperty("message", "Email cannot be empty");
+            } else if (!Util.isEmailValid(email)) {
+                resJsonObject.addProperty("message", "Please enter a valid email!");
+            } else if (password.isEmpty()) {
+                resJsonObject.addProperty("message", "Password cannot be empty");
+            } else if (!Util.isPasswordValid(password)) {
+                resJsonObject.addProperty("message", "The password must contain at least uppercase, lowercase, number, special characters, and be minimum eight characters long!");
             } else {
-                User u = new User();
-                u.setFirst_name(firstName);
-                u.setLast_name(lastName);
-                u.setEmail(email);
-                u.setPassword(password);
 
-                //generate verification code
-                final String verificationCode = Util.generateCode();
-                u.setVerification(verificationCode);
-                u.setCreated_at(new Date());
+                SessionFactory sf = HibernateUtil.getSessionFactory();
+                Session session = sf.openSession();
+                session.beginTransaction();
 
-                session.save(u);
-                session.beginTransaction().commit();
+                Criteria criteria = session.createCriteria(User.class);
+                criteria.add(Restrictions.eq("email", email));
 
-                //hibernate save
-                //send email
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Mail.sendMail(email, "Mayans - Verification", "<h1>" + verificationCode + "</h1>");
-                    }
-                }).start();
-                //send email
+                if (!criteria.list().isEmpty()) {
+                    resJsonObject.addProperty("message", "User with this Email already exists");
+                } else {
+                    User u = new User();
+                    u.setFirst_name(firstName);
+                    u.setLast_name(lastName);
+                    u.setEmail(email);
+                    u.setPassword(password);
+                    u.setVerification(Util.generateCode());
+                    u.setCreated_at(new Date());
 
-                 //Session management
-                 HttpSession ses = request.getSession();
-                 ses.setAttribute("email", email);
-                  //Session management end
+                    session.save(u);
+                    session.getTransaction().commit();
+                    int userId = u.getId();
 
-                resJsonObject.addProperty("status", true);
-                resJsonObject.addProperty("message", "Registration success!.Please check your email for the verification code");
 
-                //send email
+                    HttpSession ses = request.getSession();
+                    ses.setAttribute("user", u);
+
+
+                    new Thread(() -> {
+                        Mail.sendMail(email, "Mayans - Verification", "<h1>" + u.getVerification() + "</h1>");
+                    }).start();
+
+
+                    resJsonObject.addProperty("status", true);
+                    resJsonObject.addProperty("message", "Registration success! Please check your email for the verification code.");
+                    resJsonObject.addProperty("userId", userId);
+                }
+
+                session.close();
             }
-            session.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            resJsonObject.addProperty("status", false);
+            resJsonObject.addProperty("message", "Server error: " + e.getMessage());
         }
-        String responseText = gson.toJson(resJsonObject);
-        response.setContentType("application/json");
-        response.getWriter().write(responseText);
-    }
 
+
+        response.setContentType("application/json");
+        response.getWriter().write(gson.toJson(resJsonObject));
+    }
 }

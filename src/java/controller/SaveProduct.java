@@ -32,6 +32,8 @@ import org.hibernate.criterion.Restrictions;
 
 @MultipartConfig
 @WebServlet(name = "SaveProduct", urlPatterns = {"/SaveProduct"})
+
+
 public class SaveProduct extends HttpServlet {
 
     private static final int PENDING_STAUTUS_ID = 1;
