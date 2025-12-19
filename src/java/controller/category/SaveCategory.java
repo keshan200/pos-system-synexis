@@ -1,4 +1,4 @@
-package controller.category;
+package controller;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -55,3 +55,9 @@ public class SaveCategory extends HttpServlet {
             }
 
             s.close();
+        }
+
+        response.setContentType("application/json");
+        response.getWriter().write(new Gson().toJson(responseObject));
+    }
+}
