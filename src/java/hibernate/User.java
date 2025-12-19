@@ -2,12 +2,7 @@ package hibernate;
 
 import java.io.Serializable;
 import java.util.Date;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 @Entity
 @Table(name = "users")
@@ -36,9 +31,19 @@ public class User implements Serializable {
     @Column(name = "created_at", nullable = false)
     private Date created_at;
 
-    public User() {
+    @Column(name = "status", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private UserStatus status;
 
+
+
+
+    public User() {
+        this.status = UserStatus.USER;
+        this.created_at = new Date();
     }
+
+
 
     public int getId() {
         return id;
@@ -95,5 +100,9 @@ public class User implements Serializable {
     public void setCreated_at(Date created_at) {
         this.created_at = created_at;
     }
+
+    public UserStatus getStatus() {return status;}
+
+    public void setStatus(UserStatus status) {this.status = status;}
 
 }
