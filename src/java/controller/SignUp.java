@@ -40,7 +40,7 @@ public class SignUp extends HttpServlet {
             final String email = userJson.get("email").getAsString().trim();
             String password = userJson.get("password").getAsString().trim();
 
-            // ✅ Input validations
+
             if (firstName.isEmpty()) {
                 resJsonObject.addProperty("message", "First Name cannot be empty");
             } else if (lastName.isEmpty()) {
