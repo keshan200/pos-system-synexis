@@ -63,36 +63,35 @@ public class SignUp extends HttpServlet {
                 criteria.add(Restrictions.eq("email", email));
 
                 if (!criteria.list().isEmpty()) {
-                    resJsonObject.addProperty("message", "User with this Email already exists");
+                    resJsonObject.addProperty("message", "User already exists");
                 } else {
+
                     User u = new User();
                     u.setFirst_name(firstName);
                     u.setLast_name(lastName);
                     u.setEmail(email);
                     u.setPassword(password);
                     u.setVerification(Util.generateCode());
-                    u.setCreated_at(new Date());
 
                     session.save(u);
                     session.getTransaction().commit();
-                    int userId = u.getId();
-
 
                     HttpSession ses = request.getSession();
-                    ses.setAttribute("user", u);
-
+                    ses.setAttribute("email", email);
+                    ses.setAttribute("userId", u.getId());
 
                     new Thread(() -> {
-                        Mail.sendMail(email, "Mayans - Verification", "<h1>" + u.getVerification() + "</h1>");
+                        Mail.sendMail(
+                                email,
+                                "Mayans - Verification",
+                                "<h1>" + u.getVerification() + "</h1>"
+                        );
                     }).start();
 
-
                     resJsonObject.addProperty("status", true);
-                    resJsonObject.addProperty("message", "Registration success! Please check your email for the verification code.");
-                    resJsonObject.addProperty("userId", userId);
                 }
-
                 session.close();
+
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -34,12 +34,19 @@ public class LoadProductData extends HttpServlet {
             List<Color> colorList = s.createCriteria(Color.class).list();
             List<Storage> storageList = s.createCriteria(Storage.class).list();
 
+
+
+
             // Fetch products dynamically
             String category = request.getParameter("category");
             String hql = "FROM Product";
             if (category != null && !category.isEmpty()) {
                 hql += " WHERE category = :category";
             }
+
+
+
+
 
             List<Product> productList;
             if (category != null && !category.isEmpty()) {
@@ -59,8 +66,8 @@ public class LoadProductData extends HttpServlet {
             responseObject.add("colorList", gson.toJsonTree(colorList));
             responseObject.add("storageList", gson.toJsonTree(storageList));
             responseObject.add("productList", gson.toJsonTree(productList));
-
             responseObject.addProperty("status", true);
+
 
         } catch (Exception e) {
             responseObject.addProperty("status", false);
@@ -68,6 +75,7 @@ public class LoadProductData extends HttpServlet {
         } finally {
             s.close();
         }
+
 
         response.setContentType("application/json");
         response.getWriter().write(new Gson().toJson(responseObject));

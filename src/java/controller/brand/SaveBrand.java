@@ -14,7 +14,6 @@ import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Restrictions;
-
 @WebServlet(name = "SaveBrand", urlPatterns = {"/SaveBrand"})
 public class SaveBrand extends HttpServlet {
 
@@ -22,42 +21,55 @@ public class SaveBrand extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        response.setContentType("application/json");
+
+        JsonObject json = new JsonObject();
+
         String name = request.getParameter("name");
 
-        JsonObject responseObject = new JsonObject();
-        responseObject.addProperty("status", false);
+
+        System.out.println("Received brand name: " + name);
 
         if (name == null || name.trim().isEmpty()) {
-            responseObject.addProperty("message", "Brand name cannot be empty");
-        } else {
-
-            SessionFactory sf = HibernateUtil.getSessionFactory();
-            Session s = sf.openSession();
-
-            // check duplicate brand
-            Criteria c = s.createCriteria(Brand.class);
-            c.add(Restrictions.eq("name", name.trim()));
-            Brand existingBrand = (Brand) c.uniqueResult();
-
-            if (existingBrand != null) {
-                responseObject.addProperty("message", "Brand already exists");
-            } else {
-
-                Brand brand = new Brand();
-                brand.setName(name.trim());
-
-                s.beginTransaction();
-                s.save(brand);
-                s.getTransaction().commit();
-
-                responseObject.addProperty("status", true);
-                responseObject.addProperty("message", "Brand added successfully");
-            }
-
-            s.close();
+            json.addProperty("status", false);
+            json.addProperty("message", "Brand name cannot be empty");
+            response.getWriter().write(json.toString());
+            return;
         }
 
-        response.setContentType("application/json");
-        response.getWriter().write(new Gson().toJson(responseObject));
+        name = name.trim();
+
+        Session session = HibernateUtil.getSessionFactory().openSession();
+
+        try {
+            // check duplicate
+            Criteria c = session.createCriteria(Brand.class);
+            c.add(Restrictions.eq("name", name));
+            Brand existing = (Brand) c.uniqueResult();
+
+            if (existing != null) {
+                json.addProperty("status", false);
+                json.addProperty("message", "Brand already exists");
+            } else {
+                Brand brand = new Brand();
+                brand.setName(name);
+
+                session.beginTransaction();
+                session.save(brand);
+                session.getTransaction().commit();
+
+                json.addProperty("status", true);
+                json.addProperty("message", "Brand added successfully");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            json.addProperty("status", false);
+            json.addProperty("message", "Server error");
+        } finally {
+            session.close();
+        }
+
+        response.getWriter().write(json.toString());
     }
 }

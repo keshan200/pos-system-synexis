@@ -1,4 +1,4 @@
-package controller;
+package controller.category;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;

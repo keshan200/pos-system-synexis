@@ -39,7 +39,7 @@ public class User implements Serializable {
 
 
     public User() {
-        this.status = UserStatus.USER;
+        this.status = UserStatus.ADMIN;
         this.created_at = new Date();
     }
 
